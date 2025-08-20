@@ -18,6 +18,15 @@ public class Ville {
         this.nom = nom;
         this.nbHabitants = nbHabitants;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getNom() {
         return nom;
     }
@@ -40,4 +49,6 @@ public class Ville {
                 ", nbHabitants=" + nbHabitants +
                 '}';
     }
+
+
 }
