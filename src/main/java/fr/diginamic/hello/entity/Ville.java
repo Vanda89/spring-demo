@@ -1,29 +1,29 @@
 package fr.diginamic.hello.entity;
 
-import jakarta.persistence.*;
-
-@Entity
 public class Ville {
 
-    @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
-    private Long id;
+    private int id;
     private String nom;
-    private Integer nbHabitants;
+    private int nbHabitants;
 
-    public Ville() {
-    }
+    public Ville() {}
 
-    public Ville(String nom, Integer nbHabitants) {
+    public Ville(int id, String nom, int nbHabitants) {
+        this.id = id;
         this.nom = nom;
         this.nbHabitants = nbHabitants;
     }
 
-    public Long getId() {
+    public Ville(String nom, int nbHabitants) {
+        this.nom = nom;
+        this.nbHabitants = nbHabitants;
+    }
+
+    public int getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -34,11 +34,11 @@ public class Ville {
         this.nom = nom;
     }
 
-    public Integer getNbHabitants() {
+    public int getNbHabitants() {
         return nbHabitants;
     }
 
-    public void setNbHabitants(Integer nbHabitants) {
+    public void setNbHabitants(int nbHabitants) {
         this.nbHabitants = nbHabitants;
     }
 
