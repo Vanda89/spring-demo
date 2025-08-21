@@ -1,9 +1,16 @@
 package fr.diginamic.hello.entity;
 
+import jakarta.validation.constraints.*;
+
+
 public class Ville {
 
+    @Positive(message = "L'id doit être strictement positif")
     private int id;
+    @NotNull (message = "Le nom de la ville ne peut pas être null")
+    @Size(min = 2, message = "Le nom de la ville doit posséder au moins deux caractères")
     private String nom;
+    @Min(value = 1, message = "Le nombre d'habitants doit être supérieur ou égal à 1")
     private int nbHabitants;
 
     public Ville() {}
