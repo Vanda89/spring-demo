@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
 
 @Service
 public class CsvImportService {
@@ -36,6 +37,12 @@ public class CsvImportService {
      */
     @Transactional
     public void importData(String csvFilePath) {
+        List<Ville> villes = villeDao.getAllVilles();
+
+        if (!villes.isEmpty()) {
+            return;
+        }
+
         try (BufferedReader br = new BufferedReader(new FileReader(csvFilePath))) {
             String line;
             br.readLine();
