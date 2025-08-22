@@ -1,34 +1,27 @@
 package fr.diginamic.hello.controllers;
 
 import fr.diginamic.hello.entity.Ville;
+import fr.diginamic.hello.services.VilleService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/villes")
 public class VilleController {
 
-    /**
-     * List of Ville objects to simulate a database
-     */
-    private final List<Ville> villes = new ArrayList<>();
+    private final VilleService villeService;
 
     /**
-     * Constructor to initialize the list with some sample data
+     * Constructor to inject the VilleService dependency.
+     *
+     * @param villeService
      */
-    public VilleController() {
-        villes.add(new Ville(1, "Paris", 2148000));
-        villes.add(new Ville(2, "Lyon", 515695));
-        villes.add(new Ville(3, "Marseille", 861635));
-        villes.add(new Ville(4, "Bordeaux", 257068));
+    public VilleController(VilleService villeService) {
+        this.villeService = villeService;
     }
 
     /**
@@ -38,21 +31,19 @@ public class VilleController {
      */
     @GetMapping
     public List<Ville> getVilles() {
-        return villes;
+        return villeService.extractVilles();
     }
 
     /**
      * Get /villes/{id} -> Get a city by its ID
      *
-     * @param id the ID of the city to retrieve
-     * @return the Ville object with the specified ID, or null if not found
+     * @param idVille the ID of the city to retrieve
+     * @return ResponseEntity with the Ville object or an error if not found
      */
     @GetMapping(path = "/{id}")
-    public Ville getVilleById(@PathVariable Integer id) {
-        return villes.stream()
-                .filter(ville -> ville.getId() == id)
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ville non trouvée"));
+    public ResponseEntity<Ville> getVilleById(@PathVariable Integer idVille) {
+        Ville ville = villeService.extractVilleById(idVille);
+        return ResponseEntity.ok(ville);
 
     }
 
@@ -60,65 +51,25 @@ public class VilleController {
      * Post /villes/add -> Add a new city
      *
      * @param newVille the Ville object to add
-     * @param result   BindingResult to capture validation errors
      * @return ResponseEntity with a success message or an error if the city already exists
      */
-    @PostMapping("/add")
-    public ResponseEntity<String> addVille(@Valid @RequestBody Ville newVille, BindingResult result) {
-
-        if (result.hasErrors()) {
-            String errors = result.getAllErrors().stream()
-                    .map(error -> error.getDefaultMessage())
-                    .collect(Collectors.joining("; "));
-            return ResponseEntity.badRequest().body("Erreur de validation : " + errors);
-        }
-
-        boolean existingCity = villes.stream()
-                .anyMatch(ville -> ville.getNom().equalsIgnoreCase(newVille.getNom()));
-
-        if (existingCity) {
-            return ResponseEntity.badRequest().body("La ville " + newVille.getNom() + " existe déjà.");
-        }
-
-        if(newVille.getId() == 0) {
-            int maxId = villes.stream()
-                    .mapToInt(Ville::getId)
-                    .max()
-                    .orElse(0);
-            newVille.setId(maxId + 1);
-        }
-
-        villes.add(newVille);
-        return ResponseEntity.ok("Ville insérée avec succès : " + newVille.getNom());
+    @PostMapping(value = "/add", consumes = "application/json")
+    public ResponseEntity<List<Ville>> addVille(@RequestBody @Valid Ville newVille) {
+        List<Ville> villes = villeService.insertVille(newVille);
+        return ResponseEntity.ok(villes);
     }
 
     /**
      * Put /villes/update/{id} -> Update an existing city
      *
-     * @param id      the ID of the city to update
-     * @param updated the updated Ville object
+     * @param id the ID of the city to update
+     * @param updatedVille the updated Ville object
      * @return ResponseEntity with a success message or an error if the city does not exist
      */
     @PutMapping("/update/{id}")
-    public ResponseEntity<String> updateVille(@PathVariable int id, @Valid @RequestBody Ville updated, BindingResult result) {
-
-        if (id <= 0) {
-            return ResponseEntity.badRequest().body("L'id doit être strictement positif");
-        }
-
-        if (result.hasErrors()) {
-            String errors = result.getAllErrors().stream()
-                    .map(error -> error.getDefaultMessage())
-                    .collect(Collectors.joining("; "));
-
-            return ResponseEntity.badRequest().body("Erreur de validation : " + errors);
-        }
-
-        Ville villeToUpdate = getVilleById(id);
-        villeToUpdate.setNom(updated.getNom());
-        villeToUpdate.setNbHabitants(updated.getNbHabitants());
-
-        return ResponseEntity.ok("Ville mise à jour avec succès : " + updated.getNom());
+    public ResponseEntity<List<Ville>> updateVille(@PathVariable Integer id, @RequestBody Ville updatedVille) {
+        List<Ville> villes = villeService.updateVille(id, updatedVille);
+        return ResponseEntity.ok(villes);
     }
 
     /**
@@ -129,10 +80,40 @@ public class VilleController {
      */
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteVille(@PathVariable int id) {
-        Ville villeToDelete = getVilleById(id);
+        villeService.deleteVille(id);
+        return ResponseEntity.ok("Ville supprimée avec succès pour l'id : " + id);
+    }
 
-        villes.remove(villeToDelete);
-        return ResponseEntity.ok("Ville supprimée avec succès : " + villeToDelete.getNom());
+    /**
+     * Get /villes/mostpopulated?codeDepartement={codeDepartement}&n={n} -> Get the n most populated cities of a department
+     *
+     * @param codeDepartement the code of the department
+     * @param n the number of cities to retrieve
+     * @return ResponseEntity with the list of Ville objects or an error if the department does not exist
+     */
+    @GetMapping("/mostpopulated")
+    public ResponseEntity<List<Ville>> getMostPopulatedCities(String codeDepartement, int n) {
+
+        List<Ville> mostPopulatedCities = villeService.getTopNVillesByPopulationOfDepartement(codeDepartement, n);
+        return ResponseEntity.ok(mostPopulatedCities);
+
+    }
+
+    /**
+     * Get /villes/rangedpopulated?codeDepartement={codeDepartement}&min={min}&max={max} -> Get cities of a department
+     * with population within a specified range
+     *
+     * @param codeDepartement the code of the department
+     * @param min the minimum population
+     * @param max the maximum population
+     * @return ResponseEntity with the list of Ville objects or an error if the department does not exist
+     */
+    @GetMapping("/rangedpopulated")
+    public ResponseEntity<List<Ville>> getLargestCitiesOfDepartement(String codeDepartement, int min, int max) {
+
+        List<Ville> largestCities = villeService.getCitiesByPopulationRangeOfDepartement(codeDepartement, min, max);
+        return ResponseEntity.ok(largestCities);
+
     }
 
 
