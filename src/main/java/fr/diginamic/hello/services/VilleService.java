@@ -6,7 +6,10 @@ import fr.diginamic.hello.entity.Ville;
 import fr.diginamic.hello.daos.VilleDao;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.BindingResult;
 
 import java.util.List;
 
@@ -31,11 +34,17 @@ public class VilleService {
     /**
      * Retrieves all Ville entities from the database.
      *
-     * @return a list of all Ville entities
+     * @return a ResponseEntity containing a list of all Ville entities
      */
     @Transactional
-    public List<Ville> extractVilles() {
-        return villeDao.getAllVilles();
+    public ResponseEntity<?> extractVilles() {
+        List<Ville> villes = villeDao.getAllVilles();
+
+        if (villes == null || villes.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Aucune ville trouvée");
+        }
+
+        return ResponseEntity.ok(villes);
     }
 
     /**
@@ -44,20 +53,22 @@ public class VilleService {
      * @param id the ID of the Ville to retrieve
      * @return the Ville entity with the specified ID
      * @throws IllegalArgumentException if the ID is less than or equal to 0
-     * @throws EntityNotFoundException if no Ville with the given ID exists
+     * @throws EntityNotFoundException  if no Ville with the given ID exists
      */
     @Transactional
-    public Ville extractVilleById(int id) {
+    public ResponseEntity<?> extractVilleById(int id) {
         if (id <= 0) {
-            throw new IllegalArgumentException("L'id de la ville doit être supérieur à 0");
+            return ResponseEntity.badRequest().body("L'id de la ville doit être supérieur à 0");
         }
 
         Ville ville = villeDao.getVilleById(id);
 
         if (ville == null) {
-            throw new EntityNotFoundException("Ville avec l'id " + id + " non trouvée");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Ville avec l'id " + id + " non trouvée");
         }
-        return ville;
+
+        return ResponseEntity.ok(ville);
     }
 
     /**
@@ -66,168 +77,169 @@ public class VilleService {
      * @param nom the name of the Ville to search for
      * @return the Ville entity with the specified name
      * @throws IllegalArgumentException if the name is empty
-     * @throws EntityNotFoundException if no Ville with the given name exists
+     * @throws EntityNotFoundException  if no Ville with the given name exists
      */
     @Transactional
-    public Ville extractVilleByName(String nom) {
+    public ResponseEntity<?> extractVilleByName(String nom) {
         if (nom == null || nom.isEmpty()) {
-            throw new IllegalArgumentException("Le nom de la ville ne peut pas être vide");
+            return ResponseEntity.badRequest().body("Le nom de la ville ne peut pas être vide");
         }
-
         Ville ville = villeDao.getVilleByName(nom);
         if (ville == null) {
-            throw new EntityNotFoundException("Aucune ville trouvée avec le nom " + nom);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Aucune ville trouvée avec le nom " + nom);
         }
-
-        return ville;
+        return ResponseEntity.ok(ville);
     }
 
-   /**   * Inserts a new Ville entity into the database.
+    /**
+     * Inserts a new Ville entity into the database.
      *
      * @param ville the Ville object to insert
      * @return a list of all Ville entities after the insertion
      * @throws IllegalArgumentException if the input data is invalid
      */
     @Transactional
-    public List<Ville> insertVille(Ville ville) {
-
+    public ResponseEntity<?> insertVille(Ville ville, BindingResult result) {
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(result.getAllErrors());
+        }
         if (ville == null) {
-            throw new IllegalArgumentException("La ville ne peut pas être null");
+            return ResponseEntity.badRequest().body("La ville ne peut pas être null");
+        }
+        if (ville.getNom() == null || ville.getNom().length() < 2) {
+            return ResponseEntity.badRequest().body("Le nom de la ville doit contenir au moins 2 caractères");
+        }
+        if (ville.getNbHabitants() < 1) {
+            return ResponseEntity.badRequest().body("Le nombre d'habitants doit être supérieur à 0");
         }
 
-        if(ville.getNom().isEmpty()) {
-            throw new IllegalArgumentException("Le nom de la ville ne peut pas être vide");
+        Departement dep = departementDao.getDepartementByCode(ville.getDepartement().getCode());
+        if (dep == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Département avec le code " + ville.getDepartement().getCode() + " non trouvé");
         }
 
-        if(ville.getNom().length() < 2 ) {
-            throw new IllegalArgumentException("Le nom de la ville doit contenir au moins 2 caractères");
-        }
-
-        if(ville.getNbHabitants() < 1) {
-            throw new IllegalArgumentException("Le nombre d'habitants doit être supérieur à 0");
-        }
-
-        Departement departement = departementDao.getDepartementByCode(ville.getDepartement().getCode());
-        if(departement == null) {
-            throw new IllegalArgumentException("Le département avec le code " + ville.getDepartement().getCode() + " n'existe pas");
-        }
-
-        ville.setDepartement(departement);
-
+        ville.setDepartement(dep);
         villeDao.insertVille(ville);
-        return villeDao.getAllVilles();
+
+        List<Ville> villes = villeDao.getAllVilles();
+        return ResponseEntity.status(HttpStatus.CREATED).body(villes);
     }
 
     /**
      * Updates an existing Ville entity.
      *
-     * @param idVille the ID of the Ville to update
+     * @param idVille      the ID of the Ville to update
      * @param villeUpdated the updated Ville object
      * @return a list of all Ville entities after the update
      * @throws IllegalArgumentException if no Ville with the given ID exists or if input data is invalid
-     * @throws EntityNotFoundException if no Ville with the given ID exists
+     * @throws EntityNotFoundException  if no Ville with the given ID exists
      */
     @Transactional
-    public List<Ville> updateVille(int idVille, Ville villeUpdated) {
+    public ResponseEntity<?> updateVille(int idVille, Ville villeUpdated, BindingResult result) {
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(result.getAllErrors());
+        }
         if (idVille <= 0) {
-            throw new IllegalArgumentException("L'id doit être strictement positif");
+            return ResponseEntity.badRequest().body("L'id doit être strictement positif");
         }
-
-        if (villeUpdated.getNom() == null || villeUpdated.getNom().trim().length() < 2)
-            throw new IllegalArgumentException("Le nom de la ville doit contenir au moins 2 caractères");
-
-
+        if (villeUpdated.getNom() == null || villeUpdated.getNom().trim().length() < 2) {
+            return ResponseEntity.badRequest().body("Le nom de la ville doit contenir au moins 2 caractères");
+        }
         if (villeUpdated.getNbHabitants() < 1) {
-            throw new IllegalArgumentException("Le nombre d'habitants doit être supérieur à 0");
+            return ResponseEntity.badRequest().body("Le nombre d'habitants doit être supérieur à 0");
         }
-
-        if (villeUpdated.getDepartement() == null || villeUpdated.getDepartement().getCode() == null)
-            throw new IllegalArgumentException("Le département doit être renseigné");
+        if (villeUpdated.getDepartement() == null || villeUpdated.getDepartement().getCode() == null) {
+            return ResponseEntity.badRequest().body("Le département doit être renseigné");
+        }
 
         Departement dep = departementDao.getDepartementByCode(villeUpdated.getDepartement().getCode());
-        if (dep == null)
-            throw new EntityNotFoundException("Département non trouvé pour code " + villeUpdated.getDepartement().getCode());
+        if (dep == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Département non trouvé pour code " + villeUpdated.getDepartement().getCode());
+        }
 
+        villeUpdated.setDepartement(dep);
         villeDao.updateVille(idVille, villeUpdated);
-        return villeDao.getAllVilles();
 
+        List <Ville> villes = villeDao.getAllVilles();
+        return ResponseEntity.ok(villes);
     }
 
-  /**   * Deletes a Ville entity by its ID.
+    /**
+     * Deletes a Ville entity by its ID.
      *
      * @param idVille the ID of the Ville to delete
      * @throws IllegalArgumentException if no Ville with the given ID exists
-     * @throws EntityNotFoundException if no Ville with the given ID exists
+     * @throws EntityNotFoundException  if no Ville with the given ID exists
      */
     @Transactional
-    public void deleteVille(int idVille) {
-        if(idVille <= 0) {
-            throw new IllegalArgumentException("L'id doit être strictement positif");
+    public ResponseEntity<?> deleteVille(int idVille) {
+        if (idVille <= 0) {
+            return ResponseEntity.badRequest().body("L'id doit être strictement positif");
         }
-
         Ville ville = villeDao.getVilleById(idVille);
         if (ville == null) {
-            throw new EntityNotFoundException("Ville avec l'id " + idVille + " non trouvée");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Ville avec l'id " + idVille + " non trouvée");
         }
-
         villeDao.deleteVille(idVille);
+        return ResponseEntity.ok("Ville supprimée avec succès avec l'id : " + idVille);
     }
 
     /**
      * Retrieves the top N Ville entities by population for a given department code.
      *
      * @param codeDepartement the code of the department
-     * @param n the number of top cities to retrieve
+     * @param n               the number of top cities to retrieve
      * @return a list of the top N Ville entities by population
      * @throws IllegalArgumentException if the department code is empty or if n is less than or equal to 0
-     * @throws EntityNotFoundException if no department is found with the given code
+     * @throws EntityNotFoundException  if no department is found with the given code
      */
     @Transactional
-    public List<Ville> getTopNVillesByPopulationOfDepartement(String codeDepartement, int n) {
+    public ResponseEntity<?> getTopNVillesByPopulationOfDepartement(String codeDepartement, int n) {
         if (codeDepartement == null || codeDepartement.trim().isEmpty()) {
-            throw new IllegalArgumentException("Le code du département ne peut pas être vide");
+            return ResponseEntity.badRequest().body("Le code du département ne peut pas être vide");
         }
-
-        Departement departement = departementDao.getDepartementByCode(codeDepartement);
-        if (departement == null) {
-            throw new EntityNotFoundException("Département avec le code " + codeDepartement + " non trouvé");
-        }
-
         if (n <= 0) {
-            throw new IllegalArgumentException("Le nombre de villes doit être supérieur à 0");
+            return ResponseEntity.badRequest().body("Le nombre de villes doit être supérieur à 0");
         }
-
-        return villeDao.getLargestCitiesOfDepartement(codeDepartement, n);
+        Departement dep = departementDao.getDepartementByCode(codeDepartement);
+        if (dep == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Département avec le code " + codeDepartement + " non trouvé");
+        }
+        return ResponseEntity.ok(villeDao.getLargestCitiesOfDepartement(codeDepartement, n));
     }
 
     /**
-     * Retrieves a list of Ville entities within a specified population range for a given department code.
+     * Retrieves Ville entities within a specified population range for a given department code.
      *
      * @param codeDepartement the code of the department
-     * @param min the minimum population
-     * @param max the maximum population
+     * @param min             the minimum population
+     * @param max             the maximum population
      * @return a list of Ville entities within the specified population range
-     * @throws IllegalArgumentException if the department code is empty, or if min/max values are invalid
-     * @throws EntityNotFoundException if no department is found with the given code
+     * @throws IllegalArgumentException if the department code is empty, if min or max are negative, or if min is greater than max
+     * @throws EntityNotFoundException  if no department is found with the given code
      */
     @Transactional
-    public List<Ville> getCitiesByPopulationRangeOfDepartement (String codeDepartement, int min, int max) {
+    public ResponseEntity<?> getCitiesByPopulationRangeOfDepartement(String codeDepartement, int min, int max) {
         if (codeDepartement == null || codeDepartement.trim().isEmpty()) {
-            throw new IllegalArgumentException("Le code du département ne peut pas être vide");
+            return ResponseEntity.badRequest().body("Le code du département ne peut pas être vide");
         }
-
         if (min < 0 || max < 0) {
-            throw new IllegalArgumentException("Les valeurs de population doivent être positives");
+            return ResponseEntity.badRequest().body("Les valeurs de population doivent être positives");
         }
-
         if (min > max) {
-            throw new IllegalArgumentException("La valeur minimale ne peut pas être supérieure à la valeur maximale");
+            return ResponseEntity.badRequest().body("La valeur minimale ne peut pas être supérieure à la valeur maximale");
         }
-
-        Departement departement = departementDao.getDepartementByCode(codeDepartement);
-        if (departement == null) throw new EntityNotFoundException("Département non trouvé pour code " + codeDepartement);
-
-        return villeDao.getCitiesByPopulationRangeOfDepartement(codeDepartement, min, max);
+        Departement dep = departementDao.getDepartementByCode(codeDepartement);
+        if (dep == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Département avec le code " + codeDepartement + " non trouvé");
+        }
+        return ResponseEntity.ok(villeDao.getCitiesByPopulationRangeOfDepartement(codeDepartement, min, max));
     }
 
 }
