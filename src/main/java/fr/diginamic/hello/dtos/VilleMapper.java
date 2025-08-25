@@ -4,11 +4,12 @@ import fr.diginamic.hello.entity.Departement;
 import fr.diginamic.hello.entity.Ville;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class VilleMapper {
 
     /**
-     *
      * @param ville
      * @return - a VilleDto containing the Ville's code, name, population,
      * department code, and department name
@@ -27,5 +28,6 @@ public class VilleMapper {
                 ville.getDepartement().getNom()
         );
     }
+
 }
 

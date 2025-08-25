@@ -30,8 +30,8 @@ public class VilleController {
      * @return the list of {@link Ville} objects
      */
     @GetMapping
-    public ResponseEntity<?> getAllVilles() {
-        return villeService.extractVilles();
+    public ResponseEntity<?> getAllVilles(@RequestParam int page, @RequestParam int size) {
+        return villeService.extractVilles(page, size);
     }
 
     /**
@@ -40,13 +40,13 @@ public class VilleController {
      * @param idVille the ID of the city to retrieve
      * @return ResponseEntity with the Ville object or an error if not found
      */
-    @GetMapping(path = "/{id}")
+    @GetMapping(path = "/id/{idVille}")
     public ResponseEntity<?> getVilleById(@PathVariable int idVille) {
         return villeService.extractVilleById(idVille);
     }
 
     /**
-     * Get /villes/name?ville={name} -> Get a city by its name
+     * Get /villes/search?ville={name} -> Get a city by its name
      *
      * @param ville the name of the city to retrieve
      * @return ResponseEntity with the Ville object or an error if not found
@@ -57,7 +57,27 @@ public class VilleController {
     }
 
     /**
+     * Get /villes/search/start?prefix={prefix}
+     *
+     * @param prefix the starting of the city to retrieve
+     * @return ResponseEntity with the Ville object or an error if not found
+     *
+     */
+    @GetMapping("/search/start")
+    public ResponseEntity<?> getCitiesStartingWith(@RequestParam String prefix) {
+        return villeService.extractVilleStartsWith(prefix);
+    }
+
+    /**
      * Post /villes/add -> Add a new city
+     * {
+     *   "codeVille": "75056",
+     *   "nom": "Paris",
+     *   "nbHabitants": 2148000,
+     *   "departement": {
+     *     "code": "01"
+     *   }
+     * }
      *
      * @param ville  the Ville object to add
      * @param result the BindingResult containing validation results
@@ -94,32 +114,71 @@ public class VilleController {
     }
 
     /**
-     * Get /villes/mostpopulated?codeDepartement={codeDepartement}&n={n} -> Get the n most populated cities of a department
+     * Get /villes/top/min?min={min} -> Get the most populated cities
      *
-     * @param codeDepartement the code of the department
-     * @param n               the number of cities to retrieve
-     * @return ResponseEntity with the list of Ville objects or an error if the department does not exist
+     * @param min  the minimum population
+     * @return
      */
-    @GetMapping("/mostpopulated")
-    public ResponseEntity<?> getTopVilles(@RequestParam String codeDepartement,
-                                          @RequestParam int n) {
-        return villeService.getTopNVillesByPopulationOfDepartement(codeDepartement, n);
+    @GetMapping("/top/min")
+    public ResponseEntity<?> getTopVilles(@RequestParam int min) {
+        return villeService.getTopNCitiesByPopulation(min);
     }
 
     /**
-     * Get /villes/rangedpopulated?codeDepartement={codeDepartement}&min={min}&max={max} -> Get cities of a department
+     * Get /villes/departement/population?min={min}&max={max} -> Get cities
+     * with population within a specified range
+     *
+     * @param min             the minimum population
+     * @param max             the maximum population
+     * @return
+     */
+
+    @GetMapping("/departement/population")
+    public ResponseEntity<?> getCitiesByRange(@RequestParam int min, @RequestParam int max) {
+        return villeService.getCitiesByPopulationRange(min, max);
+    }
+
+    /**
+     * Get /villes/top/departement/min?codeDepartement={codeDepartement}&min={min} -> Get th most populated cities of specific department
+     *
+     * @param codeDepartement the code of the department
+     * @param min  the minimum population
+     * @return
+     */
+    @GetMapping("/top/departement/min")
+    public ResponseEntity<?> getTopVilleOfDepartements(@RequestParam String codeDepartement, @RequestParam int min) {
+        return villeService.getTopNCitiesByPopulationOfDepartment(codeDepartement, min);
+    }
+
+
+    /**
+     * Get /villes/population?codeDepartement={codeDepartement}&min={min}&max={max} -> Get cities of a department
      * with population within a specified range
      *
      * @param codeDepartement the code of the department
      * @param min             the minimum population
      * @param max             the maximum population
-     * @return ResponseEntity with the list of Ville objects or an error if the department does not exist
+     * @return
      */
-    @GetMapping("/rangedpopulated")
-    public ResponseEntity<?> getCitiesByRange(@RequestParam String codeDepartement,
+    @GetMapping("/population")
+    public ResponseEntity<?> getCitiesByRangeOfDepartement(@RequestParam String codeDepartement,
                                               @RequestParam int min,
                                               @RequestParam int max) {
         return villeService.getCitiesByPopulationRangeOfDepartement(codeDepartement, min, max);
+    }
+
+
+    /**
+     * Get /villes/top/departement/n?codeDepartement={codeDepartement}&n={n} -> Get the n most populated cities of a department
+     *
+     * @param codeDepartement the code of the department
+     * @param n               the number of cities to retrieve
+     * @return
+     */
+    @GetMapping("/top/departement/n")
+    public ResponseEntity<?> getTopVillesofDepartementPaginated(@RequestParam String codeDepartement,
+                                          @RequestParam int n) {
+        return villeService.getTopNCitiesByPopulationOfDepartement(codeDepartement, n);
     }
 
 

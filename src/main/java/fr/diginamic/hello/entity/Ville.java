@@ -31,7 +31,7 @@ public class Ville {
     // Bidirectional ManyToOne relationship with Departement
     // JsonBackReference to handle serialization
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "DEPARTEMENT _ID", nullable = false)
+    @JoinColumn(name = "departement_id", nullable = false)
     private Departement departement;
 
     /**
