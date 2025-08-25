@@ -1,9 +1,11 @@
 package fr.diginamic.hello.services;
 
 import fr.diginamic.hello.daos.DepartementDao;
+import fr.diginamic.hello.daos.VilleDao;
+import fr.diginamic.hello.dtos.VilleDto;
+import fr.diginamic.hello.dtos.VilleMapper;
 import fr.diginamic.hello.entity.Departement;
 import fr.diginamic.hello.entity.Ville;
-import fr.diginamic.hello.daos.VilleDao;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class VilleService {
@@ -41,10 +44,16 @@ public class VilleService {
         List<Ville> villes = villeDao.getAllVilles();
 
         if (villes == null || villes.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Aucune ville trouvée");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                    .body("Aucune ville trouvée");
         }
 
-        return ResponseEntity.ok(villes);
+        List<VilleDto> villesDto = villes.stream()
+                .map(VilleMapper::toDto)
+                .toList();
+
+
+        return ResponseEntity.ok(villesDto);
     }
 
     /**
@@ -62,13 +71,13 @@ public class VilleService {
         }
 
         Ville ville = villeDao.getVilleById(id);
-
         if (ville == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Ville avec l'id " + id + " non trouvée");
         }
 
-        return ResponseEntity.ok(ville);
+        VilleDto villeDto = VilleMapper.toDto(ville);
+        return ResponseEntity.ok(villeDto);
     }
 
     /**
@@ -89,7 +98,9 @@ public class VilleService {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Aucune ville trouvée avec le nom " + nom);
         }
-        return ResponseEntity.ok(ville);
+
+        VilleDto villeDto = VilleMapper.toDto(ville);
+        return ResponseEntity.ok(villeDto);
     }
 
     /**
@@ -124,7 +135,11 @@ public class VilleService {
         villeDao.insertVille(ville);
 
         List<Ville> villes = villeDao.getAllVilles();
-        return ResponseEntity.status(HttpStatus.CREATED).body(villes);
+        List<VilleDto> villesDto = villes.stream()
+                .map(VilleMapper::toDto)
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(villesDto);
     }
 
     /**
@@ -163,8 +178,12 @@ public class VilleService {
         villeUpdated.setDepartement(dep);
         villeDao.updateVille(idVille, villeUpdated);
 
-        List <Ville> villes = villeDao.getAllVilles();
-        return ResponseEntity.ok(villes);
+        List<Ville> villes = villeDao.getAllVilles();
+        List<VilleDto> villesDto = villes.stream()
+                .map(VilleMapper::toDto)
+                .toList();
+
+        return ResponseEntity.ok(villesDto);
     }
 
     /**
@@ -202,15 +221,23 @@ public class VilleService {
         if (codeDepartement == null || codeDepartement.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Le code du département ne peut pas être vide");
         }
+
         if (n <= 0) {
             return ResponseEntity.badRequest().body("Le nombre de villes doit être supérieur à 0");
         }
+
         Departement dep = departementDao.getDepartementByCode(codeDepartement);
         if (dep == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Département avec le code " + codeDepartement + " non trouvé");
         }
-        return ResponseEntity.ok(villeDao.getLargestCitiesOfDepartement(codeDepartement, n));
+
+        List<Ville> villes = villeDao.getLargestCitiesOfDepartement(codeDepartement, n);
+        List<VilleDto> villesDto = villes.stream()
+                .map(VilleMapper::toDto)
+                .toList();
+
+        return ResponseEntity.ok(villesDto);
     }
 
     /**
@@ -228,18 +255,27 @@ public class VilleService {
         if (codeDepartement == null || codeDepartement.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Le code du département ne peut pas être vide");
         }
+
         if (min < 0 || max < 0) {
             return ResponseEntity.badRequest().body("Les valeurs de population doivent être positives");
         }
+
         if (min > max) {
             return ResponseEntity.badRequest().body("La valeur minimale ne peut pas être supérieure à la valeur maximale");
         }
+
         Departement dep = departementDao.getDepartementByCode(codeDepartement);
         if (dep == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Département avec le code " + codeDepartement + " non trouvé");
         }
-        return ResponseEntity.ok(villeDao.getCitiesByPopulationRangeOfDepartement(codeDepartement, min, max));
+
+        List<Ville> villes = villeDao.getCitiesByPopulationRangeOfDepartement(codeDepartement, min, max);
+        List<VilleDto> villesDto = villes.stream()
+                .map(VilleMapper::toDto)
+                .toList();
+
+        return ResponseEntity.ok(villesDto);
     }
 
 }

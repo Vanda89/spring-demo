@@ -4,11 +4,10 @@ import fr.diginamic.hello.entity.Ville;
 import fr.diginamic.hello.services.VilleService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/villes")
@@ -35,7 +34,7 @@ public class VilleController {
         return villeService.extractVilles();
     }
 
-   /**
+    /**
      * Get /villes/{id} -> Get a city by its ID
      *
      * @param idVille the ID of the city to retrieve
@@ -57,7 +56,7 @@ public class VilleController {
         return villeService.extractVilleByName(ville);
     }
 
-   /**
+    /**
      * Post /villes/add -> Add a new city
      *
      * @param ville  the Ville object to add
@@ -72,7 +71,7 @@ public class VilleController {
     /**
      * Put /villes/update/{id} -> Update an existing city
      *
-     * @param idVille the ID of the city to update
+     * @param idVille      the ID of the city to update
      * @param villeUpdated the updated Ville object
      * @return ResponseEntity with a success message or an error if the city does not exist
      */
@@ -98,7 +97,7 @@ public class VilleController {
      * Get /villes/mostpopulated?codeDepartement={codeDepartement}&n={n} -> Get the n most populated cities of a department
      *
      * @param codeDepartement the code of the department
-     * @param n the number of cities to retrieve
+     * @param n               the number of cities to retrieve
      * @return ResponseEntity with the list of Ville objects or an error if the department does not exist
      */
     @GetMapping("/mostpopulated")
@@ -112,8 +111,8 @@ public class VilleController {
      * with population within a specified range
      *
      * @param codeDepartement the code of the department
-     * @param min the minimum population
-     * @param max the maximum population
+     * @param min             the minimum population
+     * @param max             the maximum population
      * @return ResponseEntity with the list of Ville objects or an error if the department does not exist
      */
     @GetMapping("/rangedpopulated")

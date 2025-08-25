@@ -47,7 +47,8 @@ public class VilleDao {
                 .getSingleResult();
     }
 
-    /** * Inserts a new Ville entity into the database.
+    /**
+     * Inserts a new Ville entity into the database.
      *
      * @param ville the Ville object to insert
      */
@@ -59,7 +60,7 @@ public class VilleDao {
     /**
      * Updates an existing Ville entity.
      *
-     * @param idVille the ID of the Ville to update
+     * @param idVille      the ID of the Ville to update
      * @param villeUpdated the updated Ville object
      * @throws IllegalArgumentException if no Ville with the given ID exists
      */
@@ -69,27 +70,36 @@ public class VilleDao {
             throw new IllegalArgumentException("Ville avec l'id " + idVille + " non trouvée");
         }
 
+        villeExisting.setCodeVille(villeUpdated.getCodeVille());
         villeExisting.setNom(villeUpdated.getNom());
         villeExisting.setNbHabitants(villeUpdated.getNbHabitants());
+        villeExisting.setDepartement(villeUpdated.getDepartement());
 
     }
 
-    /** * Deletes a Ville entity by its ID.
+    /**
+     * Deletes a Ville entity by its ID.
      *
      * @param idVille the ID of the Ville to delete
      * @throws IllegalArgumentException if no Ville with the given ID exists
-     *
      */
     public void deleteVille(int idVille) {
         Ville ville = em.find(Ville.class, idVille);
 
-        if(ville == null) {
+        if (ville == null) {
             throw new IllegalArgumentException("Ville avec l'id " + idVille + " non trouvée");
-        } else {
-            em.remove(ville);
         }
+        em.remove(ville);
+
     }
 
+
+    /**
+     *
+     * @param codeDepartement
+     * @param n
+     * @return
+     */
     public List<Ville> getLargestCitiesOfDepartement(String codeDepartement, int n) {
         return em.createQuery("SELECT v FROM Ville v WHERE v.departement.code = :codeDepartement ORDER BY v.nbHabitants DESC", Ville.class)
                 .setParameter("codeDepartement", codeDepartement)
